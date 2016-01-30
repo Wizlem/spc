@@ -8,10 +8,9 @@ file
 from __future__ import division
 import struct
 import numpy as np 
-import matplotlib.pyplot as plt
 
-from sub import subFile, subFileOld
-from global_fun import read_subheader, flag_bits
+from spc.sub import subFile, subFileOld
+from spc.global_fun import read_subheader, flag_bits
 
 class File:
     """ 
@@ -53,15 +52,15 @@ class File:
         # load file
         with open(filename, "rb") as fin:
             content = fin.read()
-            print "Read raw data"
+            print("Read raw data")
             
             
         # extract first two bytes to determine file type version
         
         ftflg, fversn = struct.unpack('<cc',content[:2])
         
-        if fversn == 'K': # new LSB 1st
-            print "New LSB 1st"
+        if fversn == b'K': # new LSB 1st
+            print("New LSB 1st")
             # unpack header  
             # -------------
             # use little-endian format with standard sizes 
@@ -136,7 +135,7 @@ class File:
             # null terminated string
             self.fcmnt = str(self.fcmnt).split('\x00')[0]
             
-            print "\nHEADER"
+            print("\nHEADER")
 
             # options
             # -------    
@@ -145,19 +144,19 @@ class File:
             
             # optional floating point x-values
             if self.txvals: 
-                #print "Seperate x-values"
+                #print("Seperate x-values")
                 
                 if self.txyxys:
-                    print "x-data in subfile"
+                    print("x-data in subfile")
                 else:
                     x_dat_pos = self.head_siz
                     x_dat_end = self.head_siz + (4 * self.fnpts)
                     self.x = np.array([struct.unpack_from('f', content[x_dat_pos:x_dat_end], 4 * i)[0]
                                        for i in range(0, self.fnpts)])
                     sub_pos = x_dat_end
-                    print "Read global x-data"
+                    print("Read global x-data")
             else:
-                print "Generated x-values"
+                print("Generated x-values")
                 self.x = np.linspace(self.ffirst,self.flast,num=self.fnpts)
             
             # make a list of subfiles          
@@ -165,46 +164,46 @@ class File:
             
             # for each subfile
             for i in range(self.fnsub):
-                print "\nSUBFILE", i, "\n----------"
-                #print "start pos", sub_pos
+                print("\nSUBFILE", i, "\n----------")
+                #print("start pos", sub_pos)
                 
                 # figure out its size
                 subhead_lst = read_subheader(content[sub_pos:(sub_pos+32)])
-                #print subhead_lst
+                #print(subhead_lst)
                 if subhead_lst[6] > 0:
                     pts = subhead_lst[6]
-                    print "Using subfile points"
+                    print("Using subfile points")
                 else:
                     pts = self.fnpts
-                    print "Using global subpoints"
+                    print("Using global subpoints")
                     
                 # if xvalues already set, should use that number of points
                 # only necessary for f_xy.spc
                 if self.fnpts > 0:
                     pts = self.fnpts
-                    print "Using global subpoints"
+                    print("Using global subpoints")
                     
-                #print "Points in subfile", pts
+                #print("Points in subfile", pts)
                     
                 if self.txyxys:
                     dat_siz = (8*pts) + 32
                 else:
                     dat_siz = (4*pts) + 32
                     
-                #print "Data size", dat_siz
+                #print("Data size", dat_siz)
                     
                 sub_end = sub_pos + dat_siz
-                #print "sub_end", sub_end
+                #print("sub_end", sub_end)
                 # read into object, add to list
                 self.sub.append(subFile(content[sub_pos:sub_end], self.fnpts, self.fexp, self.txyxys))
-                # print self.sub[i].y
+                # print(self.sub[i].y)
                 # update positions
                 sub_pos = sub_end
                 
             # flog offset to log data offset not zero (bytes)
-            #print "log data position" , self.flogoff
+            #print("log data position" , self.flogoff)
             if self.flogoff: 
-                print "Log data exists"
+                print("Log data exists")
                 log_head_end = self.flogoff + self.log_siz
                 self.logsizd, \
                     self.logsizm, \
@@ -214,12 +213,12 @@ class File:
                     self.logspar \
                     = struct.unpack(self.logstc_str, content[self.flogoff:log_head_end])
                 log_pos = self.flogoff + self.logtxto
-                print "Offset to text", self.logtxto
-                #print "log stuff", self.logsizd, self.logsizm
+                print("Offset to text", self.logtxto)
+                #print("log stuff", self.logsizd, self.logsizm)
                 log_end_pos = log_pos + self.logsizd
-                self.log_content = content[log_pos:log_end_pos].split('\r\n')
+                self.log_content = content[log_pos:log_end_pos].decode('utf-8').split('\r\n')
                 
-                #print self.log_content
+                #print(self.log_content)
                 # split log data into dictionary
                 self.log_dict = dict()
                 self.log_other = [] # put the rest into a list
@@ -238,13 +237,13 @@ class File:
             self.set_exp_type()
             
             
-        elif fversn == 'L': # new MSB 1st
-            print "New MSB 1st, yet to be implemented"
+        elif fversn == b'L': # new MSB 1st
+            print("New MSB 1st, yet to be implemented")
             pass # To be implemented
             
             
-        elif fversn == 'M': # old format
-            print "Old Version"
+        elif fversn == b'M': # old format
+            print("Old Version")
             self.oftflgs, \
                 self.oversn, \
                 self.oexp, \
@@ -301,40 +300,40 @@ class File:
             
             # for each subfile
             for i in range(self.onsub):
-                print "\nSUBFILE", i, "\n----------"
-                print "start pos", sub_pos
+                print("\nSUBFILE", i, "\n----------")
+                print("start pos", sub_pos)
                 
                 # figure out its size
                 subhead_lst = read_subheader(self.osubh1)
                 
-                print subhead_lst
+                print(subhead_lst)
                 if subhead_lst[6] > 0:
                     pts = subhead_lst[6]
-                    print "Using subfile points"
+                    print("Using subfile points")
                 else:
                     pts = self.onpts
-                    print "Using global subpoints"
+                    print("Using global subpoints")
                     
                 # if xvalues already set, should use that number of points
                 # only necessary for f_xy.spc
                 if self.onpts > 0:
                     pts = self.onpts
-                    print "Using global subpoints"
+                    print("Using global subpoints")
                     
-                print "Points in subfile", pts
+                print("Points in subfile", pts)
                 dat_siz = (4*pts)
                     
-                print "Data size", dat_siz
+                print("Data size", dat_siz)
                     
                 sub_end = sub_pos + dat_siz
                 
-                print "sub_end", sub_end
+                print("sub_end", sub_end)
                 
                 # read into object, add to list
                 
-                print sub_pos, sub_end, self.onpts, self.oexp
+                print(sub_pos, sub_end, self.onpts, self.oexp)
                 self.sub.append(subFileOld(content[sub_pos-32:sub_end], self.onpts, self.oexp, False))
-                # print self.sub[i].y
+                # print(self.sub[i].y)
                 # update positions
                 sub_pos = sub_end
         
@@ -445,7 +444,7 @@ class File:
         # split it based on 00 string 
         # format x, y, z
         if self.talabs:
-            xl, yl, zl = self.fcatxt.split('\x00')[:3]
+            xl, yl, zl = self.fcatxt.decode('utf-8').split('\x00')[:3]
             
             # overwrite only if non zero
             if len(xl) > 0:
@@ -508,75 +507,65 @@ class File:
         
     def print_metadata(self):
         """ Print out select metadata"""
-        print "Scan: ", self.log_dict['Comment'], "\n", \
+        print("Scan: ", self.log_dict['Comment'], "\n", \
             float(self.log_dict['Start']), "to ", \
             float(self.log_dict['End']), "; ", \
             float(self.log_dict['Increment']), "cm-1;", \
-            float(self.log_dict['Integration Time']), "s integration time"
+            float(self.log_dict['Integration Time']), "s integration time")
        
-    def plot(self):
-        """ Plots data, and use column headers"""
-        for i in range(self.fnsub):
-            plt.plot(self.x,self.sub[i].y)
-        
-        # add labels
-        plt.xlabel(self.pr_xlabel)
-        plt.ylabel(self.pr_ylabel)
-
-            
     def debug_info(self):
         """ 
         Interpret flags and header information to debug more about the file 
         format
         """
-        print "\nDEBUG INFO"
+        print("\nDEBUG INFO")
         # Flag bits
         if self.tsprec:
-            print "16-bit y data"
+            print("16-bit y data")
         if self.tcgram:
-            print "enable fexper"
+            print("enable fexper")
         if self.tmulti:
-            print "multiple traces"
+            print("multiple traces")
         if self.trandm:
-            print "arb time (z) values"
+            print("arb time (z) values")
         if self.tordrd:
-            print "ordered but uneven subtimes"
+            print("ordered but uneven subtimes")
         if self.talabs:
-            print "use fcatxt axis not fxtype"
+            print("use fcatxt axis not fxtype")
         if self.txyxys:
-            print "each subfile has own x's"
+            print("each subfile has own x's")
         if self.txvals:
-            print "floating x-value array preceeds y's"
+            print("floating x-value array preceeds y's")
         
         # spc format version        
-        if self.fversn == '\0x4b':
+        if self.fversn == b'\0x4b':
             self.pr_versn = "new LSB 1st"
-        elif self.fversn == '\0x4c':
+        elif self.fversn == b'\0x4c':
             self.pr_versn = "new MSB 1st"
-        elif self.fversn == '\0x4d':
+        elif self.fversn == b'\0x4d':
             self.pr_versn = "old format (unsupported)"
         else:
             self.pr_versn = "unknown version"
             
-        print "Version:", self.pr_versn
+        print("Version:", self.pr_versn)
             
         # subfiles
         if self.fnsub == 1:
-            print "Single file only" 
+            print("Single file only" )
         else:
-            print "Multiple subfiles:", self.fnsub
+            print("Multiple subfiles:", self.fnsub)
             
         # multiple y values
         if self.tmulti: 
-            print "Multiple y-values"
+            print("Multiple y-values")
         else:
-            print "Single set of y-values"
+            print("Single set of y-values")
             
             
-        #print "There are ", self.fnpts, \
+        #print("There are ", self.fnpts, \
         #    " points between ", self.ffirst, \
         #    " and ", self.flast, \
-        #    " in steps of ", self.pr_spacing
+        #    " in steps of ", self.pr_spacing)
             
 
 

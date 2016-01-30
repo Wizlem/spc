@@ -1,25 +1,29 @@
 import os
 import spc
+import traceback
 
 tfile = 0
 tpass = 0
 
 dpath = os.path.join(os.getcwd(), 'spc', 'test_data')
-for i in os.listdir(dpath):
+files = [f for f in os.listdir(dpath) if os.path.isfile(os.path.join(dpath, f))]
+for f in files:
     tfile += 1
     try:
-        f1 = spc.File(os.path.join(dpath, i))
+        f1 = spc.File(os.path.join(dpath, f))
         try:
-            outfile = os.path.join(dpath, 'csv', i[:-4] + '.csv')
+            outfile = os.path.join(dpath, 'csv', f[:-4] + '.csv')
             with open(outfile, 'r') as fin:
                 dat = fin.read()
                 if f1.data_txt() == dat:
-                    print "-->Pass"
+                    print("-->Pass")
                     tpass += 1
                 else:
-                    print "-->Fail"
+                    print("-->Fail")
         except:
-            print "--Fail"
+            traceback.print_exc()
+            print("--Fail")
     except:
-        print "-->Fail"
-print "Passed %i of %i tests " % (tpass, tfile)
+        traceback.print_exc()
+        print("-->Fail")
+print("Passed %i of %i tests " % (tpass, tfile))
