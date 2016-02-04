@@ -8,9 +8,10 @@ file
 from __future__ import division
 import struct
 import numpy as np 
+import datetime
 
-from spc.sub import subFile, subFileOld
-from spc.global_fun import read_subheader, flag_bits
+from .sub import subFile, subFileOld
+from .global_fun import read_subheader, flag_bits
 
 class File:
     """ 
@@ -126,11 +127,15 @@ class File:
             
             # Convert date time to appropriate format
             d = self.fdate
-            self.year = d >> 20
-            self.month = (d >> 16) % (2**4)
-            self.day = (d >> 11) % (2**5)
-            self.hour = (d >> 6) % (2**5)
-            self.minute = d % (2**6)
+            fyear = d >> 20
+            fmonth = (d >> 16) & 0xf
+            fday = (d >> 11) & 0x1f
+            fhour = (d >> 6) & 0x1f
+            fminute = d & 0x3f
+            try:
+                self.datetime = datetime.datetime(fyear, fmonth, fday, fhour, fminute, 0)
+            except ValueError:
+                self.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
             
             # null terminated string
             self.fcmnt = str(self.fcmnt).split('\x00')[0]
@@ -483,14 +488,14 @@ class File:
         dat = self.pr_xlabel + "\t" + self.pr_ylabel + "\n"
         
         if self.txyxys:
-            x = self.sub.x
+            x = [s.x for s in self.sub]
         else:
             x = self.x
             
         for i in range(self.fnpts):
             dat = dat + str(x[i]) + "\t" 
-            for j in range(self.fnsub):
-                dat = dat + str(self.sub[j].y[i]) + "\t" 
+            for s in self.sub:
+                dat = dat + str(s.y[i]) + "\t" 
             dat = dat + "\n"
             
         return dat

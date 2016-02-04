@@ -8,7 +8,7 @@ from __future__ import division
 import struct
 import numpy as np
 
-from spc.global_fun import read_subheader
+from .global_fun import read_subheader
 
 
 class subFile:
