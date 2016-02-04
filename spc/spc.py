@@ -482,6 +482,17 @@ class File:
     # ------------------------------------------------------------------------
     # output 
     # ------------------------------------------------------------------------
+    def data(self):
+        """ Returns x,y column data as a numpy arrays."""
+        print('self.txyxys = %s' % str(self.txyxys))
+        if self.txyxys:
+            x = np.array([s.x for s in self.sub])
+        else:
+            x = np.array(self.x)
+        y = np.array([s.y for s in self.sub])
+
+        return x, y
+
     def data_txt(self):
         """ Returns x,y column data as a string variable, can be printed to
         standard output or fed to text file."""
