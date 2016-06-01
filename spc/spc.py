@@ -49,11 +49,14 @@ class File:
     # CONSTRUCTOR
     # ------------------------------------------------------------------------
     
-    def __init__(self, filename):
+    def __init__(self, file):
         # load file
-        with open(filename, "rb") as fin:
-            content = fin.read()
-            print("Read raw data")
+        try:
+            with open(file, "rb") as fin:
+                content = fin.read()
+        except TypeError:
+            content = file.read()
+        print("Read raw data")
             
             
         # extract first two bytes to determine file type version
